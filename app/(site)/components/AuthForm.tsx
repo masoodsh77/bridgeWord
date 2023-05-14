@@ -6,6 +6,8 @@ import { useForm, FieldValues, SubmitHandler } from "react-hook-form";
 import AuthSocialButton from "./AuthSocialButton";
 import { BsGithub, BsGoogle } from "react-icons/bs";
 import axios from "axios";
+import { toast } from "react-hot-toast";
+import { signIn } from "next-auth/react";
 
 type Variant = "LOGIN" | "REGISTER";
 
@@ -37,16 +39,43 @@ const AuthForm = () => {
     setIsLoagin(true);
 
     if (variant === "REGISTER") {
-      axios.post("/api/register", data);
+      axios
+        .post("/api/register", data)
+        .catch(() => toast.error("Somthing went wrong!"))
+        .finally(() => setIsLoagin(false));
     }
     if (variant === "LOGIN") {
-      //NextAuth signin
+      signIn("credentials", {
+        ...data,
+        redirect: false,
+      })
+        .then((callback) => {
+          if (callback?.error) {
+            toast.error("invalid credentials");
+          }
+          if (callback?.ok && !callback?.error) {
+            toast.success("Logged in!");
+          }
+        })
+        .finally(() => setIsLoagin(false));
     }
   };
 
   const socialAction = (action: string) => {
     setIsLoagin(true);
-    //NextAuth social Signin
+
+    signIn("github", {
+      redirect: false,
+    })
+      .then((callback) => {
+        if (callback?.error) {
+          toast.error("invalid credentials");
+        }
+        if (callback?.ok && !callback?.error) {
+          toast.success("Logged in!");
+        }
+      })
+      .finally(() => setIsLoagin(false));
   };
   return (
     <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
@@ -99,10 +128,10 @@ const AuthForm = () => {
               icon={BsGithub}
               onClick={() => socialAction("github")}
             />
-            <AuthSocialButton
+            {/* <AuthSocialButton
               icon={BsGoogle}
               onClick={() => socialAction("google")}
-            />
+            /> */}
           </div>
         </div>
         <div className="flex gap-2 justify-center text-sm mt-6 px-2 text-gray-500">
